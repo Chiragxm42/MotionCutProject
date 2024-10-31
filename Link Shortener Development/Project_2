@@ -1,0 +1,135 @@
+1)LinkShortener Class
+
+import java.util.HashMap;
+import java.util.Random;
+
+public class LinkShortener {
+    private HashMap<String, String> urlMap;
+    private String domain; // e.g., "http://short.ly/"
+    private Random random;
+
+    public LinkShortener(String domain) {
+        this.urlMap = new HashMap<>();
+        this.domain = domain;
+        this.random = new Random();
+    }
+
+    // Generates a unique short link
+    public String shortenURL(String longUrl) {
+        String shortUrl = domain + generateShortCode();
+        while (urlMap.containsKey(shortUrl)) {
+            shortUrl = domain + generateShortCode(); // Ensuring uniqueness
+        }
+        urlMap.put(shortUrl, longUrl);
+        return shortUrl;
+    }
+
+    // Expands the short link back to the original
+    public String expandURL(String shortUrl) {
+        return urlMap.getOrDefault(shortUrl, "URL not found!");
+    }
+
+    // Generates a random 6-character code
+    private String generateShortCode() {
+        String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        StringBuilder code = new StringBuilder();
+        for (int i = 0; i < 6; i++) {
+            int index = random.nextInt(characters.length());
+            code.append(characters.charAt(index));
+        }
+        return code.toString();
+    }
+}
+
+2) CLI for User Interaction
+You can create a CLI to interact with users, allowing them to shorten and expand URLs.
+
+import java.util.Scanner;
+
+public class LinkShortenerCLI {
+    public static void main(String[] args) {
+        LinkShortener linkShortener = new LinkShortener("http://short.ly/");
+        Scanner scanner = new Scanner(System.in);
+        
+        while (true) {
+            System.out.println("Choose an option:\n1. Shorten URL\n2. Expand URL\n3. Exit");
+            int choice = scanner.nextInt();
+            scanner.nextLine(); // Consume newline
+            
+            switch (choice) {
+                case 1:
+                    System.out.println("Enter the URL to shorten:");
+                    String longUrl = scanner.nextLine();
+                    String shortUrl = linkShortener.shortenURL(longUrl);
+                    System.out.println("Shortened URL: " + shortUrl);
+                    break;
+                    
+                case 2:
+                    System.out.println("Enter the short URL to expand:");
+                    String shortUrlToExpand = scanner.nextLine();
+                    String originalUrl = linkShortener.expandURL(shortUrlToExpand);
+                    System.out.println("Original URL: " + originalUrl);
+                    break;
+                    
+                case 3:
+                    System.out.println("Exiting...");
+                    scanner.close();
+                    return;
+                    
+                default:
+                    System.out.println("Invalid choice. Please try again.");
+            }
+        }
+    }
+}
+
+3)Error Handling and Validations
+You could enhance shortenURL and expandURL with checks for invalid or duplicate URLs.
+
+public String shortenURL(String longUrl) {
+    if (urlMap.containsValue(longUrl)) {
+        for (String key : urlMap.keySet()) {
+            if (urlMap.get(key).equals(longUrl)) {
+                return key; // Return existing short URL if duplicate found
+            }
+        }
+    }
+    String shortUrl = domain + generateShortCode();
+    while (urlMap.containsKey(shortUrl)) {
+        shortUrl = domain + generateShortCode();
+    }
+    urlMap.put(shortUrl, longUrl);
+    return shortUrl;
+}
+
+4) Optional Persistence
+For a basic persistence layer, you could store mappings in a file, loading it at the start and saving changes each time a URL is shortened. Here’s a way to save and load using ObjectOutputStream and ObjectInputStream:
+
+import java.io.*;
+import java.util.HashMap;
+
+public class LinkStorage {
+    private static final String FILE_NAME = "urlMap.ser";
+
+    // Save the urlMap to a file
+    public static void saveData(HashMap<String, String> urlMap) {
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(FILE_NAME))) {
+            out.writeObject(urlMap);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Load the urlMap from a file
+    public static HashMap<String, String> loadData() {
+        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(FILE_NAME))) {
+            return (HashMap<String, String>) in.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+            return new HashMap<>(); // Return an empty map if loading fails
+        }
+    }
+}
+
+
+
