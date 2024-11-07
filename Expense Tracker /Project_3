@@ -1,0 +1,102 @@
+import json
+from datetime import datetime
+from collections import defaultdict
+
+class User:
+    def __init__(self, username, password):
+        self.username = username
+        self.password = password  # For simplicity, storing as plain text (consider hashing in real applications)
+
+class Expense:
+    def __init__(self, date, category, amount):
+        self.date = date
+        self.category = category
+        self.amount = amount
+
+class ExpenseTracker:
+    def __init__(self):
+        self.users = {}
+        self.expenses = []
+        self.load_data()
+
+    def register_user(self, username, password):
+        if username in self.users:
+            print("Username already exists. Choose a different one.")
+        else:
+            self.users[username] = User(username, password)
+            print(f"User {username} registered successfully.")
+
+    def login(self, username, password):
+        if username in self.users and self.users[username].password == password:
+            print(f"Welcome back, {username}!")
+            return True
+        else:
+            print("Invalid username or password.")
+            return False
+
+    def add_expense(self, date, category, amount):
+        try:
+            date_obj = datetime.strptime(date, '%Y-%m-%d')
+            expense = Expense(date=date_obj, category=category, amount=float(amount))
+            self.expenses.append(expense)
+            print(f"Added expense: {category} - {amount} on {date}")
+        except ValueError:
+            print("Invalid date or amount format. Please try again.")
+
+    def list_expenses(self):
+        print("\nAll Expenses:")
+        for expense in self.expenses:
+            print(f"{expense.date.strftime('%Y-%m-%d')} | {expense.category} | ${expense.amount:.2f}")
+
+    def category_wise_summary(self):
+        summary = defaultdict(float)
+        for expense in self.expenses:
+            summary[expense.category] += expense.amount
+        print("\nCategory-wise Summary:")
+        for category, total in summary.items():
+            print(f"{category}: ${total:.2f}")
+
+    def save_data(self):
+        data = {
+            "users": {username: user.password for username, user in self.users.items()},
+            "expenses": [
+                {"date": expense.date.strftime('%Y-%m-%d'), "category": expense.category, "amount": expense.amount}
+                for expense in self.expenses
+            ]
+        }
+        with open("expense_tracker_data.json", "w") as file:
+            json.dump(data, file)
+        print("Data saved successfully.")
+
+    def load_data(self):
+        try:
+            with open("expense_tracker_data.json", "r") as file:
+                data = json.load(file)
+                for username, password in data["users"].items():
+                    self.users[username] = User(username, password)
+                for expense in data["expenses"]:
+                    date_obj = datetime.strptime(expense["date"], '%Y-%m-%d')
+                    self.expenses.append(Expense(date_obj, expense["category"], expense["amount"]))
+            print("Data loaded successfully.")
+        except FileNotFoundError:
+            print("No saved data found, starting fresh.")
+
+# Example usage
+tracker = ExpenseTracker()
+
+# User registration and login
+tracker.register_user("chirag", "password123")
+is_logged_in = tracker.login("chirag", "password123")
+
+# Adding expenses
+if is_logged_in:
+    tracker.add_expense("2024-11-07", "Food", 15.50)
+    tracker.add_expense("2024-11-08", "Transport", 8.75)
+    tracker.add_expense("2024-11-08", "Food", 12.25)
+
+    # Listing and summarizing expenses
+    tracker.list_expenses()
+    tracker.category_wise_summary()
+
+    # Saving data
+    tracker.save_data()
